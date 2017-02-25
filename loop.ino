@@ -152,29 +152,22 @@ void loop() {
       }
       if (shift_latch == 1) {
 
-        pot3 = (analogRead(1)) << 4; ////////////////MAKE ME BETTERERER
+        pot3 = (analogRead(1)) << 4; 
         pot4 = analogRead(0) << 2;
 
       }
     }
   }
 
-  trigger_in_read = digitalRead(16);
 
-  if (trigger_in_read == 1 && prev_trigger_in_read == 0) {
-    trigger_input = 1;
-  }
-  else {
-    trigger_input = 0;
 
-  }
-  prev_trigger_in_read = trigger_in_read;
-
-  eigth = loopstep % 4;
+  int trigger_out = loopstep % 4;  
+   // there are 16 steps in a loop % 4 means the tiggerloopw will only go to 4 so then 4 pulese per loop.
+   // %8 would be 2 pulses per loop, %2 is 8 pulses
 
   if (tiggertempo == 0) {
 
-    if (eigth == 0) {
+    if (trigger_out == 0) {
       digitalWrite(12, HIGH);
       // tl++;
     }
@@ -184,9 +177,9 @@ void loop() {
 
   }
 
-  //////////////////////////////////////////// intput trigger
+  //////////////////////////////////////////// intput trigger not in midi version. pin used for power
 
-
+/*
 
   prev_trigger_in_read = trigger_in_read;
 
@@ -203,7 +196,7 @@ void loop() {
     trigger_step = 0;
     //digitalWrite(6,LOW);
   }
-
+*/
 
 
   /////////////////////////////////////////////////////////////////  loopstep
