@@ -122,13 +122,6 @@ void loop() {
   BUTTONS();
   RECORD();
 
-  // dd++;
-  // if (dd==0){
-  //pot1=analogRead(1);
-  //  pot1=12;
-  //  pot2=256;
-  //pot2=(analogRead(0));
-
   if (noise_mode == 0) {
     pot1 = ((analogRead(1)) >> 1) + 2;
     pot2 = ((analogRead(0)) >> 2) + 96;
@@ -373,8 +366,7 @@ void loop() {
 
   //////////////////////////////////////////////////////////////// T A P
 
-  //what=digitalRead(16);
-  // tapbutton = digitalRead(18);
+
 
   if (shift == 1) {
 
@@ -385,15 +377,11 @@ void loop() {
       t %= 2;
       tapbank[t] = ((micros()) - prevtap) >> 2;
       taptempo = ((tapbank[0] + tapbank[1]) >> 1);
-      // taptempo=((micros())-prevtap)>>2;
       prevtap = micros();
-      //   loopstep=31;
-      // prev=0;
+
     }
     else {
     }
-    // ptapbutton= tapbutton;
-    // pwhat=what;
   }
 
 
@@ -406,7 +394,6 @@ void RECORD() {
 
   playbutton = digitalRead(3);
   if (playbutton != pplaybutton && playbutton == LOW && shift == 1) {
-    //loopstep=31;
     miditempo = 0;
     play++;
     play %= 2;
@@ -418,7 +405,6 @@ void RECORD() {
 
   recordbutton = digitalRead(4);
   if (recordbutton == LOW && recordbutton != precordbutton) {
-    //    loopstep=31;
     record++;
     record %= 2;
     play = 1;
