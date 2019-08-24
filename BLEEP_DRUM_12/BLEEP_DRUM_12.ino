@@ -13,8 +13,16 @@ It is no longer necessary to edit MIDI.h
 */
 
 
+
+// !!
+// Most problems compiling come from having an old version of the midi library of multiple ones installed.
+// !!
+
 #include <MIDI.h>
 MIDI_CREATE_DEFAULT_INSTANCE();
+
+
+
 
 #include <avr/pgmspace.h>
 #include "samples.h"
