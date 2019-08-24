@@ -281,7 +281,7 @@ void loop() {
 
   if (play == 0) {
     loopstep = 31;
-    prev == 0;
+    prev = 0;
     B4_loop_trigger = 0;
     B1_loop_trigger = 0;
     B2_loop_trigger = 0;
