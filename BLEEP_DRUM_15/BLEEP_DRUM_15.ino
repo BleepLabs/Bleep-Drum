@@ -366,30 +366,29 @@ ISR(TIMER2_COMPA_vect) {
     noise_sample = (((pgm_read_byte(&sine_table[(index5)])))) - 127;
 
   }
-  sample_sum = snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample + sine_sample;
 
   if (noise_mode == 1) {
+    sample_sum = snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample;
+
     sample_holder1 = (sample_sum ^ (noise_sample >> 1)) + 127;
     if (B1_latch == 0 && B2_latch == 0  && B3_latch == 0  && B4_latch == 0 ) {
-      sample = 127 ;
+      sample_out = 127 ;
     }
     else {
-      sample = sample_holder1;
+      sample_out = sample_holder1;
     }
   }
 
   if (noise_mode == 0) {
-    //sample = ((snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample + sine_sample)) + 127;
-    //sample = (snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample + (sine_sample * click_amp)) + 127;
-    sample = (snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample + (sine_sample)) + 127;
+    sample_out = ((snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample + sine_sample) >> 1) + 127;
   }
   if (sample_out > 255) {
-    sample_out = 255;
+    sample_out -= (sample_out - 255) << 1; //fold don't clip!
   }
   if (sample_out < 0) {
-    sample_out = 0;
+    sample_out += sample_out * -2;
   }
-  uint16_t dac_out = (0 << 15) | (1 << 14) | (1 << 13) | (1 << 12) | ( sample << 2 );
+  uint16_t dac_out = (0 << 15) | (1 << 14) | (1 << 13) | (1 << 12) | ( sample_out << 4 );
   digitalWrite(10, LOW);
   SPI.transfer(dac_out >> 8);
   SPI.transfer(dac_out & 255);
@@ -789,9 +788,9 @@ void LEDS() {
 
 
   if (play == 1 && record == 0) {
-    bout = b*!erase;
-    rout = r*!erase;
-    gout = g*!erase;
+    bout = b * !erase;
+    rout = r * !erase;
+    gout = g * !erase;
 
     if ( loopstep == 0 ) {
       r = 12;
@@ -887,10 +886,10 @@ void BUTTONS() {
     }
 
 
-    if (tapb == LOW) {
+    if (tapb == 0) {
       play = 1;
       ratepot = (analogRead(14));
-      taptempo = ratepot << 14;
+      taptempo = ratepot << 2;
     }
     revbutton = digitalRead(3);
     if (revbutton == 0 && prevrevbutton == 1) {
