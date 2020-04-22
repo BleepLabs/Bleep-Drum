@@ -92,6 +92,7 @@ int potX;
 int click_pitch;
 byte click_amp;
 int click_wait;
+int sample_out_temp;
 byte sample_out;
 uint32_t dds_time;
 byte bft_latch;
@@ -103,7 +104,7 @@ int shift_time_latch;
 byte printer = 0;
 uint32_t erase_led;
 void setup() {
-  randomSeed(analogRead(0));
+  
   if (printer == 1) {
     Serial.begin(9600);
   }
@@ -134,42 +135,42 @@ void setup() {
   debouncerRed.interval(2); // interval in ms
 
   delay(100);
-  /*
-    if (digitalRead(17) == LOW) {
-      analogWrite(6, 64); //green
-      MIDI.begin(3);
-      delay(20000);
 
-    }
-    else if (digitalRead(2) == LOW) {
-      analogWrite(5, 64); //RED
-      MIDI.begin(1);
-      delay(20000); // we're messing with the timers so this isn't actually 20000 Millis
+  if (digitalRead(17) == LOW) {
+    analogWrite(6, 64); //green
+    MIDI.begin(3);
+    delay(20000);
 
-    }
-    else if (digitalRead(19) == LOW) {
-      analogWrite(9, 64); //Blue
-      MIDI.begin(2);
-      delay(20000);
+  }
+  else if (digitalRead(2) == LOW) {
+    analogWrite(5, 64); //RED
+    MIDI.begin(1);
+    delay(20000); // we're messing with the timers so this isn't actually 20000 Millis
 
-    }
-    else if (digitalRead(18) == LOW) {
-      analogWrite(5, 48); //yellow
-      analogWrite(6, 16);
+  }
+  else if (digitalRead(19) == LOW) {
+    analogWrite(9, 64); //Blue
+    MIDI.begin(2);
+    delay(20000);
 
-      MIDI.begin(4);
-      delay(20000);
+  }
+  else if (digitalRead(18) == LOW) {
+    analogWrite(5, 48); //yellow
+    analogWrite(6, 16);
 
-    }
+    MIDI.begin(4);
+    delay(20000);
 
-    else {
-      MIDI.begin(0);
-    }
+  }
 
-    MIDI.turnThruOff();
-  */
+  else {
+    MIDI.begin(0);
+  }
+
+  MIDI.turnThruOff();
+
   //pinMode (16, INPUT); digitalWrite (16, HIGH);
-  digitalWrite(16, HIGH);
+  digitalWrite(16, HIGH); //
   SPI.begin();
   SPI.setBitOrder(MSBFIRST);
 
@@ -204,9 +205,9 @@ byte out_test, out_tick = 1;
 int sine_sample;
 byte index_sine;
 uint32_t acc_sine;
-
+uint32_t trig_out_time, trig_out_latch;
 ISR(TIMER2_COMPA_vect) {
-  digitalWrite(12, 1);
+  //
   dds_time++;
   OCR2A = 50;
 
@@ -276,6 +277,15 @@ ISR(TIMER2_COMPA_vect) {
     B1_loop_trigger = 0;
     B2_loop_trigger = 0;
     B3_loop_trigger = 0;
+  }
+  if (loopstep != prevloopstep) {
+    digitalWrite(12, 1);
+    trig_out_time = dds_time;
+    trig_out_latch = 1;
+  }
+  if (dds_time - trig_out_time > 80 && trig_out_latch == 1) {
+    trig_out_latch = 0;
+    digitalWrite(12, 0);
   }
 
   if (loopstep != prevloopstep && B3_loop_trigger == 1) {
@@ -372,22 +382,24 @@ ISR(TIMER2_COMPA_vect) {
 
     sample_holder1 = (sample_sum ^ (noise_sample >> 1)) + 127;
     if (B1_latch == 0 && B2_latch == 0  && B3_latch == 0  && B4_latch == 0 ) {
-      sample_out = 127 ;
+      sample_out_temp = 127 ;
     }
     else {
-      sample_out = sample_holder1;
+      sample_out_temp = sample_holder1;
     }
   }
 
   if (noise_mode == 0) {
-    sample_out = ((snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample + sine_sample) >> 1) + 127;
+    sample_out_temp = ((snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample + sine_sample) >> 1) + 127;
   }
-  if (sample_out > 255) {
-    sample_out -= (sample_out - 255) << 1; //fold don't clip!
+  if (sample_out_temp > 255) {
+    sample_out_temp -= (sample_out_temp - 255) << 1; //fold don't clip!
   }
-  if (sample_out < 0) {
-    sample_out += sample_out * -2;
+  if (sample_out_temp < 0) {
+    sample_out_temp += sample_out_temp * -2;
   }
+  sample_out = sample_out_temp;
+  
   uint16_t dac_out = (0 << 15) | (1 << 14) | (1 << 13) | (1 << 12) | ( sample_out << 4 );
   digitalWrite(10, LOW);
   SPI.transfer(dac_out >> 8);
@@ -514,7 +526,7 @@ ISR(TIMER2_COMPA_vect) {
       accumulator5 = 0;
     }
   }
-  digitalWrite(12, 0);
+
 }
 
 ///////////////////////////////////////////////////////////////////////////////loop
@@ -622,7 +634,7 @@ void loop() {
   BUTTONS();
   RECORD();
 
-  raw1 = (analogRead(1) - 1024) * -1;
+  raw1 = (analogRead(1) - 1024) * -1; //simple way of getting an exonential range from the linear pot
   log1 = raw1 * raw1;
   raw2 = (analogRead(0) - 1024) * -1;
   log2 = raw2 * raw2;
@@ -724,7 +736,6 @@ void RECORD() {
     }
 
 
-
   }
 }
 
@@ -742,14 +753,14 @@ void LEDS() {
     bout = b;
     if (shift_latch == 1) {
       if (record == 0 && play == 0 ) {
-        r += sample >> 4;
-        b += 4;
+        r = sample_out >> 4;
+        b = sample_out >> 4;
       }
     }
     if (shift_latch == 0) {
       if (record == 0 && play == 0 ) {
-        g += sample >> 4;
-        b += 2;
+        g = sample_out >> 4;
+        b = sample_out >> 5;
       }
     }
   }
@@ -849,7 +860,7 @@ void BUTTONS() {
     shift_time_latch = 1;
   }
 
-  if (shift == 0 && shift_time_latch == 1) {
+  if (shift == 0 && tapb == 1 && shift_time_latch == 1) {
     shift_time++;
     if (shift_time > 800 ) {
       click_en = !click_en;
@@ -967,50 +978,50 @@ void BUTTONS() {
 }
 
 int midi_note_on() {
-  /*
-    int type, note, velocity, channel, d1, d2;
-    byte r = MIDI.read();
-    if (r == 1) {                  // Is there a MIDI message incoming ?
-      byte type = MIDI.getType();
-      switch (type) {
-        case 0x90: //note on. For some reasong "NoteOn" won't work enven though it's declared in midi_Defs.h
-          note = MIDI.getData1();
-          velocity = MIDI.getData2();
-          if (velocity == 0) {
-            note = 0;
-          }
 
-          break;
-        case 0x80: //note off
+  int type, note, velocity, channel, d1, d2;
+  byte r = MIDI.read();
+  if (r == 1) {                  // Is there a MIDI message incoming ?
+    byte type = MIDI.getType();
+    switch (type) {
+      case 0x90: //note on. For some reasong "NoteOn" won't work enven though it's declared in midi_Defs.h
+        note = MIDI.getData1();
+        velocity = MIDI.getData2();
+        if (velocity == 0) {
           note = 0;
-          break;
+        }
+  
+        break;
+      case 0x80: //note off
+        note = 0; 
+        break;
 
-        case 0xB0: //control change
-          if (MIDI.getData1() == 70) {
-            midicc1 = (MIDI.getData2() << 2) + 3;
-          }
+      case 0xB0: //control change
+        if (MIDI.getData1() == 70) {
+          midicc1 = (MIDI.getData2() << 2) + 3;
+        }
 
-          if (MIDI.getData1() == 71) {
-            midicc2 = (MIDI.getData2() << 2) + 3;
-          }
+        if (MIDI.getData1() == 71) {
+          midicc2 = (MIDI.getData2() << 2) + 3;
+        }
 
-          if (MIDI.getData1() == 72) {
-            midicc3 = (MIDI.getData2() << 2);
-          }
+        if (MIDI.getData1() == 72) {
+          midicc3 = (MIDI.getData2() << 2);
+        }
 
-          if (MIDI.getData1() == 73) {
-            midicc4 = (MIDI.getData2() << 2);
-          }
+        if (MIDI.getData1() == 73) {
+          midicc4 = (MIDI.getData2() << 2);
+        }
 
-        default:
-          note = 0;
+      default:
+        note = 0;
 
-      }
     }
+  }
 
-    else {
-      note = 0;
-    }
-  */
-  return 0;
+  else {
+    note = 0;
+  }
+
+  return note;
 }
