@@ -1,3 +1,13 @@
+/*
+ * The Bleep Drum
+ * By John-Mike Reed aka Dr. Bleep
+ * https://bleeplabs.com/product/the-bleep-drum/
+ *  
+ *  Updated version for April 2020 rerelease
+ *  
+ */
+
+
 #include <MIDI.h>
 MIDI_CREATE_DEFAULT_INSTANCE();
 #include <avr/pgmspace.h>
@@ -103,8 +113,9 @@ int shift_time;
 int shift_time_latch;
 byte printer = 0;
 uint32_t erase_led;
+
 void setup() {
-  
+
   if (printer == 1) {
     Serial.begin(9600);
   }
@@ -135,39 +146,40 @@ void setup() {
   debouncerRed.interval(2); // interval in ms
 
   delay(100);
+  if (printer == 0) {
+    if (digitalRead(17) == LOW) {
+      analogWrite(6, 64); //green
+      MIDI.begin(3);
+      delay(20000);
 
-  if (digitalRead(17) == LOW) {
-    analogWrite(6, 64); //green
-    MIDI.begin(3);
-    delay(20000);
+    }
+    else if (digitalRead(2) == LOW) {
+      analogWrite(5, 64); //RED
+      MIDI.begin(1);
+      delay(20000); // we're messing with the timers so this isn't actually 20000 Millis
 
+    }
+    else if (digitalRead(19) == LOW) {
+      analogWrite(9, 64); //Blue
+      MIDI.begin(2);
+      delay(20000);
+
+    }
+    else if (digitalRead(18) == LOW) {
+      analogWrite(5, 48); //yellow
+      analogWrite(6, 16);
+
+      MIDI.begin(4);
+      delay(20000);
+
+    }
+
+    else {
+      MIDI.begin(0);
+    }
+
+    MIDI.turnThruOff();
   }
-  else if (digitalRead(2) == LOW) {
-    analogWrite(5, 64); //RED
-    MIDI.begin(1);
-    delay(20000); // we're messing with the timers so this isn't actually 20000 Millis
-
-  }
-  else if (digitalRead(19) == LOW) {
-    analogWrite(9, 64); //Blue
-    MIDI.begin(2);
-    delay(20000);
-
-  }
-  else if (digitalRead(18) == LOW) {
-    analogWrite(5, 48); //yellow
-    analogWrite(6, 16);
-
-    MIDI.begin(4);
-    delay(20000);
-
-  }
-
-  else {
-    MIDI.begin(0);
-  }
-
-  MIDI.turnThruOff();
 
   //pinMode (16, INPUT); digitalWrite (16, HIGH);
   digitalWrite(16, HIGH); //
@@ -278,6 +290,7 @@ ISR(TIMER2_COMPA_vect) {
     B2_loop_trigger = 0;
     B3_loop_trigger = 0;
   }
+
   if (loopstep != prevloopstep) {
     digitalWrite(12, 1);
     trig_out_time = dds_time;
@@ -378,14 +391,19 @@ ISR(TIMER2_COMPA_vect) {
   }
 
   if (noise_mode == 1) {
-    sample_sum = snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample;
+    sample_sum = (snare_sample + kick_sample + hat_sample + bass_sample + B1_freq_sample + B2_freq_sample);
+    byte sine_noise = ((sine_sample) | (noise_sample >> 2) * click_amp >> 2) >> 3;
 
-    sample_holder1 = (sample_sum ^ (noise_sample >> 1)) + 127;
+    if (click_play == 0 | click_en == 0 | click_amp < 4) {
+      sine_noise = 0;
+    }
+
+    sample_holder1 = ((sample_sum ^ (noise_sample >> 1)) >> 1) + 127;
     if (B1_latch == 0 && B2_latch == 0  && B3_latch == 0  && B4_latch == 0 ) {
-      sample_out_temp = 127 ;
+      sample_out_temp = 127  + sine_noise ;
     }
     else {
-      sample_out_temp = sample_holder1;
+      sample_out_temp = sample_holder1   + sine_noise ;
     }
   }
 
@@ -399,7 +417,7 @@ ISR(TIMER2_COMPA_vect) {
     sample_out_temp += sample_out_temp * -2;
   }
   sample_out = sample_out_temp;
-  
+
   uint16_t dac_out = (0 << 15) | (1 << 14) | (1 << 13) | (1 << 12) | ( sample_out << 4 );
   digitalWrite(10, LOW);
   SPI.transfer(dac_out >> 8);
@@ -537,8 +555,9 @@ void loop() {
   if (printer == 1) {
     if (cm - pm > 10000) {
       pm = cm;
-      Serial.println(eee);
-      Serial.println(erase);
+      Serial.println(click_play);
+      Serial.println(click_en);
+      Serial.println(click_amp);
       Serial.println();
     }
   }
@@ -990,10 +1009,10 @@ int midi_note_on() {
         if (velocity == 0) {
           note = 0;
         }
-  
+
         break;
       case 0x80: //note off
-        note = 0; 
+        note = 0;
         break;
 
       case 0xB0: //control change
