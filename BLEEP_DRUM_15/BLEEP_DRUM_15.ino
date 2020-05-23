@@ -44,12 +44,12 @@ int kick_sample, snare_sample, sample, hat_sample, noise_sample, bass_sample, B2
 uint16_t increment, increment2, increment3, increment4, increment5, increment2v, increment4v;
 uint32_t accumulator, accumulator2, accumulator3, accumulator4, accumulator5, accu_freq_1, accu_freq_2;
 int rando;
-byte B2_sequence[64] = {};
-byte B3_sequence[64] = {};
-byte B1_sequence[64] = {};
-byte B4_sequence[64] = {};
-int B2_freq_sequence[64] = {};
-int B1_freq_sequence[64] = {};
+byte B2_sequence[129] = {};
+byte B3_sequence[129] = {};
+byte B1_sequence[129] = {};
+byte B4_sequence[129] = {};
+int B2_freq_sequence[129] = {};
+int B1_freq_sequence[129] = {};
 int sample_sum;
 int j, k, freq3, cc;
 int kf, pf, holdkf, kfe;
