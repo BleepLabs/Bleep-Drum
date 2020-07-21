@@ -1,3 +1,7 @@
+July 2020:<br>
+Second run of kits avaiable now!<br>
+https://bleeplabs.com/product/the-bleep-drum/<br>
+
 April 2020:<br>
 V15 <br>
 Click track – Hold shift for 4 seconds to turn on and off click while the device is playing.<br>
