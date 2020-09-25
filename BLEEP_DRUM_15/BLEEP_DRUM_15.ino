@@ -1,11 +1,11 @@
 /*
- * The Bleep Drum
- * By John-Mike Reed aka Dr. Bleep
- * https://bleeplabs.com/product/the-bleep-drum/
- *  
- *  Updated version for April 2020 rerelease
- *  
- */
+   The Bleep Drum
+   By John-Mike Reed aka Dr. Bleep
+   https://bleeplabs.com/product/the-bleep-drum/
+
+    Updated version for April 2020 rerelease
+
+*/
 
 
 #include <MIDI.h>
@@ -21,10 +21,35 @@ Bounce debouncerGreen = Bounce();
 Bounce debouncerBlue = Bounce();
 Bounce debouncerYellow = Bounce();
 
-#define red_pin 2
-#define blue_pin 19
-#define green_pin 17
-#define yellow_pin 18
+
+//old board
+/*
+  #define red_pin 2
+  #define blue_pin 19
+  #define green_pin 17
+  #define yellow_pin 18
+
+  #define LED_invert 0
+
+  #define play_pin 3
+  #define rec_pin 4
+  #define tap_pin 8
+  #define shift_pin 7
+
+*/
+
+#define red_pin 17
+#define blue_pin 18
+#define green_pin 2
+#define yellow_pin 19
+
+#define LED_invert 1
+
+#define play_pin 3
+#define rec_pin 4
+#define tap_pin 7
+#define shift_pin 8
+
 
 uint32_t cm, pm;
 const char noise_table[] PROGMEM = {};
@@ -146,6 +171,8 @@ void setup() {
   debouncerRed.interval(2); // interval in ms
 
   delay(100);
+
+
   if (printer == 0) {
     if (digitalRead(17) == LOW) {
       analogWrite(6, 64); //green
@@ -203,7 +230,7 @@ void setup() {
 
 
   sei();
-  if (digitalRead(7) == 0) {
+  if (digitalRead(shift_pin) == 0) {
     noise_mode = 1;
   }
   else {
@@ -579,7 +606,7 @@ void loop() {
   button3 = debouncerGreen.read();
   button4 = debouncerYellow.read();
 
-  tapb = digitalRead(8);
+  tapb = digitalRead(tap_pin);
 
   if (button1 == 0 && pbutton1 == 1) {
     bf1 = 1;
@@ -653,13 +680,13 @@ void loop() {
   BUTTONS();
   RECORD();
 
-  raw1 = (analogRead(1) - 1024) * -1; //simple way of getting an exonential range from the linear pot
+  raw1 = analogRead(0);
   log1 = raw1 * raw1;
-  raw2 = (analogRead(0) - 1024) * -1;
+  raw2 = analogRead(1);
   log2 = raw2 * raw2;
 
   if (noise_mode == 0) {
-    pot1 = (log1 >> 11) + 2;
+    pot1 = (log1 >> 11) + 2;//simple way of getting an exonential range from the linear pot
     pot2 = (log2 >> 11) + 42;
   }
 
@@ -682,14 +709,14 @@ void loop() {
 
 void RECORD() {
   pplaybutton = playbutton;
-  playbutton = digitalRead(3);
+  playbutton = digitalRead(play_pin);
   if (pplaybutton == 1 && playbutton == 0 && shift == 1 && recordbutton == 1 ) {
     play = !play;
   }
 
 
   precordbutton = recordbutton;
-  recordbutton = digitalRead(4);
+  recordbutton = digitalRead(rec_pin);
   if (recordbutton == 0 && precordbutton == 1) {
     record = !record;
     play = 1;
@@ -762,9 +789,12 @@ void RECORD() {
 
 void LEDS() {
 
-  analogWrite(9, bout >> 1); //Blue
-  analogWrite(6, (gout >> 1) + triggerled); //green
-  analogWrite(5, rout >> 1);
+  int binv = 255 - bout;
+  int ginv = 255 - gout;
+  int rinv = 255 - rout;
+  analogWrite(9, binv); //Blue
+  analogWrite(6, ginv); //green
+  analogWrite(5, rinv);
 
   if (noise_mode == 1) {
     rout = r;
@@ -772,20 +802,20 @@ void LEDS() {
     bout = b;
     if (shift_latch == 1) {
       if (record == 0 && play == 0 ) {
-        r = sample_out >> 4;
-        b = sample_out >> 4;
+        r = sample_out >> 3;
+        b = sample_out >> 3;
       }
     }
     if (shift_latch == 0) {
       if (record == 0 && play == 0 ) {
-        g = sample_out >> 4;
-        b = sample_out >> 5;
+        g = sample_out >> 3;
+        b = sample_out >> 4;
       }
     }
   }
 
   preveigth = eigth;
-
+/*
   if (g > 1) {
     g--;
   }
@@ -806,6 +836,7 @@ void LEDS() {
   if (b <= 1) {
     b = 0;
   }
+  */
   if (noise_mode == 0) {
     if (record == 0 && play == 0 ) {
 
@@ -828,9 +859,9 @@ void LEDS() {
       b = 12;
     }
     else if ( loopstep % 4 == 0) {
-      r = 5;
-      g = 5;
-      b = 5;
+      r = 8;
+      g = 10;
+      b = 10;
     }
     else {
       b = bankpb;
@@ -870,7 +901,7 @@ void LEDS() {
 void BUTTONS() {
   prevshift = shift;
 
-  shift = digitalRead(7);
+  shift = digitalRead(shift_pin);
 
   if (shift == 0 && prevshift == 1) {
     shift_latch++;
@@ -897,31 +928,22 @@ void BUTTONS() {
     }
     if (button4 == 0) { //yellow
       banko = 31;
-      bankpr = 4;
-      bankpg = 4;
-      bankpb = 0;
     }
     if (button2 == 0 || banko == 0) { //blue
       banko = 0;
-      bankpr = 0;
-      bankpg = 0;
-      bankpb = 8;
     }
     if (button3 == 0) { //green
       banko = 95;
-      bankpr = 0;
-      bankpg = 3;
-      bankpb = 0;
-
     }
 
 
     if (tapb == 0) {
       play = 1;
-      ratepot = (analogRead(14));
-      taptempo = ratepot << 2;
+      ratepot = (analogRead(1));
+      taptempo = ((ratepot - 1024) * -1) << 2;
     }
-    revbutton = digitalRead(3);
+
+    revbutton = digitalRead(play_pin);
     if (revbutton == 0 && prevrevbutton == 1) {
       playmode++;
       playmode %= 2;
@@ -930,26 +952,26 @@ void BUTTONS() {
     prevrevbutton = revbutton;
   }
 
-  if ( banko == 63) {
+  if ( banko == 63) {//red
 
-    bankpr = 4;
+    bankpr = 5;
     bankpg = 0;
     bankpb = 0;
   }
-  if ( banko == 31) {
-    bankpr = 4;
-    bankpg = 4;
+  if ( banko == 31) { //green!
+    bankpr = 0;
+    bankpg = 8;
     bankpb = 0;
   }
-  if ( banko == 0) {
+  if ( banko == 0) {//blue
     bankpr = 0;
     bankpg = 0;
-    bankpb = 8;
+    bankpb = 9;
   }
 
   if ( banko == 95) {
-    bankpr = 0;
-    bankpg = 3;
+    bankpr = 6;
+    bankpg = 8;
     bankpb = 0;
 
   }
