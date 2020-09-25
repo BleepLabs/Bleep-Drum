@@ -3,7 +3,9 @@
    By John-Mike Reed aka Dr. Bleep
    https://bleeplabs.com/product/the-bleep-drum/
 
-    Updated version for April 2020 rerelease
+   Updated version for April 2020 rerelease
+   
+   This code is for 2020 hardware. Use the "legacy upgrage" code for older devices. 
 
 */
 
