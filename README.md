@@ -1,5 +1,5 @@
 July 2020:<br>
-Second run of kits avaiable now!<br>
+Second run of kits available now!<br>
 https://bleeplabs.com/product/the-bleep-drum/<br>
 
 April 2020:<br>
